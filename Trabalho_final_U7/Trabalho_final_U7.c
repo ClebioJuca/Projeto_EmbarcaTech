@@ -20,14 +20,12 @@
     #define DEBUG_PRINT(fmt, ...)
 #endif
 
-//------------------------------------------------------------------------
-// Defines para o I2C
-#define I2C_SDA0 4
-#define I2C_SCL0 5
+//---------------------------------------------------------------------------------
+// Defines do I2C para o Display OLED
 #define I2C_SDA1 14
 #define I2C_SCL1 15
 
-//------------------------------------------------------------------------
+//---------------------------------------------------------------------------------
 // Defines para o Sensor NTC
 #define ntc_pin 26                      // Pino gpio 26 (adc0)
 #define ntc_temp_channel 0              // Channel do ADC
@@ -35,58 +33,83 @@
 #define ntc_resistor 10000.0            // Resistor em série (10 kΩ)
 #define ntc_nominal_resistance 10000.0  // Resistência nominal do ntc a 25°c
 #define ntc_nominal_temperature 25.0    // Temperatura nominal em °c
-#define ntc_b_coefficient 3950.0        // Coeficiente beta do ntc // 
-#define ntc_average_n 5
+#define ntc_b_coefficient 3950.0        // Coeficiente beta do ntc
+#define ntc_average_n 5                 // Quantidade de valores para a Média Móvel
 
-// -----------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 // Defines para o Sensor interno de Temperatura do RP2040
-#define internal_temp_channel 4
-#define internal_average_n 100
+#define internal_temp_channel 4         // Channel do ADC (adc4)
+#define internal_average_n 100			// Quantidade de valores para a Média Móvel
 
-// -----------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 // Defines para o Sensor mpu6050
 #define mpu6050_addr 0x68 // Endereço I2C do mpu6050
+#define I2C_SDA0 4
+#define I2C_SCL0 5
 
 // Registradores do mpu605
-#define pwr_mgmt_1   0x6B
-#define accel_xout_h 0x3B
-#define accel_xout_l 0x3C
-#define accel_yout_h 0x3D
-#define accel_yout_l 0x3E
-#define accel_zout_h 0x3F  
-#define accel_zout_l 0x40
+#define pwr_mgmt_1   	0x6B
+#define accel_xout_high 0x3B
+#define accel_xout_low 	0x3C
+#define accel_yout_high 0x3D
+#define accel_yout_low 	0x3E
+#define accel_zout_high 0x3F  
+#define accel_zout_low  0x40
 
-// -----------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+// Variáveis Globais:
+
 // Tensão de referência do adc
-float adc_voltage = 3.3f;
+const float adc_voltage = 3.3f;
 
+// Variável de interrupção do sistema
 volatile bool exit_code = false;
 
+// Cliente MQTT
 mqtt_client_t *global_mqtt_client = NULL;
-volatile absolute_time_t last_mqtt_connect = 0;
-// -----------------------------------------------------------------------
+// --------------------------------------------------------------------------------
  
 // Prototipação das Funções utilizadas
-float ntc_calculate_temperature();                                                          // Calcula temperatura do NTC
 
-float internal_calculate_temperature();                                                     // Calcula temperatura interna do RP2040
+// Sensores e Periféricos:
+// Calcula a temperatura do NTC
+float ntc_calculate_temperature();                                                         
 
-void mpu6050_init(i2c_inst_t *i2c);                                                         // Inicializa o MPU6050    
-int16_t read_accel_axis(i2c_inst_t *i2c, uint8_t reg_high, uint8_t reg_low);                // Lê um eixo do MPU6050
-float calculate_magnitude(float accel_x, float accel_y, float accel_z);                     // Calcula a magnitude da aceleração
+// Calcula temperatura interna do RP2040
+float internal_calculate_temperature();
 
-void update_ssd1306(uint8_t ssd[], struct render_area frame_area, float sensor_data[3]);    // Atualiza o display OLED
+// Inicializa o MPU6050  
+void mpu6050_init(i2c_inst_t *i2c);
+// Lê um eixo do MPU6050
+int16_t read_accel_axis(i2c_inst_t *i2c, uint8_t reg_high, uint8_t reg_low);
+// Calcula a magnitude da aceleração
+float calculate_magnitude(float accel_x, float accel_y, float accel_z);
 
-uint wifi_init();                                                                           // Inicializa o Wi-Fi
-void mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_status_t status); // Callback da conexão MQTT
-void mqtt_publish_cb(void *arg, err_t result);                                              // Callback do envio da mensagem
-void mqtt_subscribe_cb(void *arg, signed char response_code);                                    // Callback da inscrição no tópico
-void mqtt_incoming_publish_cb(void *arg, const char *topic, u32_t tot_len);                 // Callback da mensagem recebida pelo tópico
-void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags);             // Callback dos dados recebidos
-void mqtt_start_action(const u8_t *data, u16_t len);                                        // Inicia a ação com base nos dados recebidos                                  // Callback da inscrição no tópico
-void start_mqtt_client();                                                                   // Inicializa o cliente MQTT
-void reconnect_wifi();                                                                         // Reconecta ao Wi-Fi e ao Broker MQTT  
-void display_interruption(uint8_t ssd[], struct render_area frame_area, char* message);     // Exibe a mensagem de interrupção dos sensores
+// Atualiza o display OLED
+void update_ssd1306(uint8_t ssd[], struct render_area frame_area, float sensor_data[3]);
+
+
+// Funções do Wi-Fi e MQTT
+// Inicializa o Wi-Fi
+uint wifi_init();
+// Callback da conexão M
+void mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_status_t status);
+// Callback do envio da mensagem
+void mqtt_publish_cb(void *arg, err_t result);
+// Callback da inscrição no tópico
+void mqtt_subscribe_cb(void *arg, signed char response_code);
+// Callback da mensagem recebida pelo tópico
+void mqtt_incoming_publish_cb(void *arg, const char *topic, u32_t tot_len);
+// Callback dos dados recebidos
+void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags);
+// Inicia a ação com base nos dados recebidos
+void mqtt_start_action(const u8_t *data, u16_t len);
+// Inicializa o cliente MQTT
+void start_mqtt_client();
+// Reconecta ao Wi-Fi e ao Broker MQTT
+void reconnect_wifi();
+// Exibe a mensagem de interrupção dos sensores
+void display_interruption(uint8_t ssd[], struct render_area frame_area, char* message);
 
 int main() 
 {
@@ -175,9 +198,9 @@ int main()
             display_interrupted = false;
             last_update = current_time;
 
-            int16_t ax = read_accel_axis(i2c0, accel_xout_h, accel_xout_l);
-            int16_t ay = read_accel_axis(i2c0, accel_yout_h, accel_yout_l);
-            int16_t az = read_accel_axis(i2c0, accel_zout_h, accel_zout_l);
+            int16_t ax = read_accel_axis(i2c0, accel_xout_high, accel_xout_low);
+            int16_t ay = read_accel_axis(i2c0, accel_yout_high, accel_yout_low);
+            int16_t az = read_accel_axis(i2c0, accel_zout_high, accel_zout_low);
 
             // Armazena as leituras dos sensores em um array
             float sensor_data[] = 

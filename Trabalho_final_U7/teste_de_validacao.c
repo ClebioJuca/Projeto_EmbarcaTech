@@ -88,7 +88,6 @@ volatile bool exit_code = false;
 
 #ifndef wokwi
   mqtt_client_t *global_mqtt_client = NULL;
-  volatile absolute_time_t last_mqtt_connect;
 #endif 
 
 // Prototipação das Funções utilizadas
